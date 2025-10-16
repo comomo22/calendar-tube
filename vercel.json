@@ -1,0 +1,26 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/refresh-tokens",
+      "schedule": "0 */12 * * *"
+    },
+    {
+      "path": "/api/cron/refresh-webhooks",
+      "schedule": "0 0 * * *"
+    }
+  ],
+  "functions": {
+    "app/api/webhook/calendar/route.ts": {
+      "maxDuration": 30
+    },
+    "app/api/sync/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/cron/refresh-tokens/route.ts": {
+      "maxDuration": 30
+    },
+    "app/api/cron/refresh-webhooks/route.ts": {
+      "maxDuration": 30
+    }
+  }
+}
