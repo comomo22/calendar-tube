@@ -40,9 +40,9 @@ export async function GET() {
       syncSettings,
       debug: {
         hasUser: !!user,
-        hasGoogleAccounts: googleAccounts?.length > 0,
-        hasCalendars: calendars?.length > 0,
-        hasSyncSettings: syncSettings?.length > 0,
+        hasGoogleAccounts: (googleAccounts?.length || 0) > 0,
+        hasCalendars: (calendars?.length || 0) > 0,
+        hasSyncSettings: (syncSettings?.length || 0) > 0,
       }
     });
   } catch (error) {
