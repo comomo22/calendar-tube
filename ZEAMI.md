@@ -117,46 +117,41 @@ Archiving:
 
 ### User Information
 ```yaml
-Name/Nickname: こもも
-Preferred Language: Japanese
-Experience Level: Beginner (non-technical)
+Name/Nickname: # Ask at first interaction
+Preferred Language: # English/Japanese/etc.
+Experience Level: # Beginner/Intermediate/Advanced
 ```
 
 ### Project Vision (Set through initial dialogue)
 ```yaml
-What to Build: Multi-Account Google Calendar Sync App
-Why Building: Eliminate manual duplicate event creation across 3 Google accounts (Work A, Work B, Personal C)
-Target Users: こもも (personal use, extensible to 4+ calendars)
-Key Features:
-  - Bi-directional auto-sync (create/update/delete)
-  - Real-time webhook sync + manual sync button
-  - Sync loop prevention using extendedProperties
-  - Simple setup (just login with Google 3 times)
-  - Initial sync: today to 3 months future
-Success Criteria: Events automatically appear across all calendars without manual intervention
+What to Build: # Clarify through conversation
+Why Building: # Understand motivation
+Target Users: # Who will use this
+Key Features: # Main functionalities
+Success Criteria: # What defines completion
 ```
 
 ## 🗺️ Project Map
 
 ### Current Location & Goal
 ```yaml
-Project: calendar-tube
-Current: Core implementation completed, ready for testing
-Goal: Fully automated multi-account Google Calendar sync system
-Progress: [⬛⬛⬛⬛⬛⬛⬛⬛⬜⬜] 80%
+Project: # Enter project name
+Current: # Enter current work
+Goal: # Enter final goal
+Progress: [⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜] 0%
 ```
 
 ### Development Path
 ```
 Start
     ↓
-✅ Requirements
+⬜ Requirements
     ↓
-✅ Design
+⬜ Design
     ↓
-✅ Implementation
+⬜ Implementation
     ↓
-🔄 Testing
+⬜ Testing
     ↓
 🏁 Release
 ```
@@ -168,25 +163,18 @@ Start
 ```yaml
 # Record adopted technologies (AI auto-updates)
 Frontend:
-  framework: Next.js 15 (App Router)
-  styling: TailwindCSS
+  framework: # Fill when detected
+  styling: # Fill when detected
 
 Backend:
-  runtime: Node.js
-  framework: Next.js API Routes
+  runtime: # Fill when detected
+  framework: # Fill when detected
 
 Database:
-  primary: Supabase (PostgreSQL)
-
-Authentication:
-  method: NextAuth.js (Google OAuth)
-
-External APIs:
-  calendar: Google Calendar API v3
+  primary: # Fill when detected
 
 Tools:
-  package_manager: npm
-  deployment: Vercel
+  package_manager: # Fill when detected
 ```
 
 ### Recommended Technology Matrix
@@ -239,33 +227,6 @@ Code Quality Rules:
 
 ### Latest Learnings (Max 10 items retained)
 <!-- AI adds new learnings. Old ones are auto-patterned -->
-
-#### ⭐ Google Calendar API同期ループ防止パターン (2025-10-13)
-**問題**: 複数カレンダー間でイベントをコピーすると無限ループが発生
-**解決**: `extendedProperties.private`にマーカーを設定
-```typescript
-// 同期済みイベントにマーカーを付与
-extendedProperties: {
-  private: {
-    "calendar-tube-synced": "true",
-    "source_calendar_id": sourceCalendar.id,
-    "source_event_id": event.id,
-  }
-}
-
-// 同期処理時にマーカーをチェック
-const isSyncedCopy = event.extendedProperties?.private?.["calendar-tube-synced"] === "true";
-if (isSyncedCopy) return; // ループ防止
-```
-**教訓**: Google Calendar APIの非表示プロパティを活用して、アプリ固有のメタデータを安全に保存できる
-
-#### ⭐ NextAuth v5 + Supabase統合パターン (2025-10-13)
-**実装**: NextAuth v5 (Auth.js) でGoogle OAuthとSupabase DBを連携
-**ポイント**:
-- `signIn` callbackでSupabaseにユーザー・アカウント情報を保存
-- `refresh_token`を必ず保存（`access_type: "offline"`, `prompt: "consent"`）
-- Server Actionで`signIn()`を呼び出す際は`"use server"`ディレクティブ必須
-**教訓**: NextAuth v5はv4と大きく異なるため、公式ドキュメント必読
 
 #### ⭐ 配列操作の安全パターン (2025-09-29)
 **問題**: オプショナルチェーン`?.`で配列メソッドを呼ぶとTypeError発生

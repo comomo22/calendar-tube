@@ -22,6 +22,7 @@
     "googleapis": "^162.0.0",
     "next": "^15.5.4",
     "next-auth": "^5.0.0-beta.29",
+    "openid-client": "^6.8.1",
     "pg": "^8.16.3",
     "postcss": "^8.5.6",
     "react": "^19.2.0",
