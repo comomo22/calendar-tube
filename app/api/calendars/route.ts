@@ -64,8 +64,41 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if account has refresh_token
+    if (!account.refresh_token) {
+      console.error("[Calendars API] Account missing refresh_token:", googleAccountId);
+      return NextResponse.json(
+        {
+          error: "Authentication error",
+          details: "Your Google account needs to be re-authenticated. Please sign in again with Google.",
+          code: "NO_REFRESH_TOKEN"
+        },
+        { status: 401 }
+      );
+    }
+
     // Get primary calendar from Google
-    const calendars = await listCalendars(account);
+    let calendars;
+    try {
+      calendars = await listCalendars(account);
+    } catch (error) {
+      console.error("[Calendars API] Error fetching calendars:", error);
+
+      // Check if it's an authentication error
+      if (error instanceof Error && error.message.includes("refresh")) {
+        return NextResponse.json(
+          {
+            error: "Authentication expired",
+            details: "Your Google authentication has expired. Please sign in again.",
+            code: "TOKEN_REFRESH_FAILED"
+          },
+          { status: 401 }
+        );
+      }
+
+      throw error; // Re-throw other errors
+    }
+
     const primaryCalendar = calendars.find((cal) => cal.primary);
 
     if (!primaryCalendar) {

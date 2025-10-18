@@ -28,21 +28,22 @@ export async function GET() {
       .from("calendars")
       .select("*");
 
-    // Get sync settings
-    const { data: syncSettings } = await supabaseAdmin
-      .from("sync_settings")
-      .select("*");
+    // Get sync events for debugging
+    const { data: syncEvents } = await supabaseAdmin
+      .from("sync_events")
+      .select("*")
+      .limit(10);
 
     return NextResponse.json({
       user,
       googleAccounts,
       calendars,
-      syncSettings,
+      syncEvents,
       debug: {
         hasUser: !!user,
         hasGoogleAccounts: (googleAccounts?.length || 0) > 0,
         hasCalendars: (calendars?.length || 0) > 0,
-        hasSyncSettings: (syncSettings?.length || 0) > 0,
+        hasSyncEvents: (syncEvents?.length || 0) > 0,
       }
     });
   } catch (error) {

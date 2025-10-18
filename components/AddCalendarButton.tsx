@@ -19,8 +19,21 @@ export function AddCalendarButton({ googleAccountId }: { googleAccountId: string
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to add calendar");
+        const errorData = await response.json();
+
+        // Check for specific error codes
+        if (errorData.code === "NO_REFRESH_TOKEN" || errorData.code === "TOKEN_REFRESH_FAILED") {
+          // Authentication issue - prompt to re-authenticate
+          alert(
+            "Googleアカウントの再認証が必要です。\n" +
+            "もう一度Googleアカウントでログインしてください。"
+          );
+          // Optionally redirect to sign-in
+          window.location.href = "/auth/signin";
+          return;
+        }
+
+        throw new Error(errorData.details || errorData.error || "Failed to add calendar");
       }
 
       router.refresh();

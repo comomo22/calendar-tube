@@ -158,11 +158,29 @@ export class TokenManager {
     try {
       // refresh_tokenがない場合はエラー
       if (!account.refresh_token) {
-        throw new Error('No refresh token available');
+        console.error(`[TokenManager] Critical: No refresh token for account ${account.id}`);
+        console.error(`[TokenManager] User email: ${account.email}`);
+        throw new Error('No refresh token available. User must re-authenticate.');
       }
 
       // Google APIを使用してトークンをリフレッシュ
-      const { credentials } = await client.refreshAccessToken();
+      let credentials;
+      try {
+        const refreshResult = await client.refreshAccessToken();
+        credentials = refreshResult.credentials;
+      } catch (refreshError) {
+        console.error(`[TokenManager] Token refresh failed for account ${account.id}:`, refreshError);
+
+        // Check if it's a refresh token revoked error
+        if (refreshError instanceof Error &&
+            (refreshError.message.includes('invalid_grant') ||
+             refreshError.message.includes('Token has been expired or revoked'))) {
+          console.error(`[TokenManager] Refresh token is invalid or revoked for account ${account.id}`);
+          throw new Error('Refresh token is invalid. User must re-authenticate with Google.');
+        }
+
+        throw refreshError;
+      }
 
       // 新しいトークンを設定
       client.setCredentials(credentials);
