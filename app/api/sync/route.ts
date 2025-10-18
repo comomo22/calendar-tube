@@ -52,6 +52,27 @@ export async function POST(request: NextRequest) {
 
     console.log(`[Sync API] Starting sync process...`);
 
+    // Debug: Get all calendars for this user to understand the sync targets
+    const { data: allUserCalendars } = await supabaseAdmin
+      .from("calendars")
+      .select("*, google_accounts!inner(*)")
+      .eq("google_accounts.user_id", user?.id);
+
+    const debugInfo = {
+      sourceCalendar: calendar.calendar_name,
+      sourceAccount: account.email,
+      totalUserCalendars: allUserCalendars?.length || 0,
+      targetCalendars: allUserCalendars
+        ?.filter(c => c.id !== calendarId)
+        .map(c => ({
+          name: c.calendar_name,
+          account: (c as any).google_accounts?.email,
+          active: c.is_active
+        }))
+    };
+
+    console.log(`[Sync API] Debug info:`, debugInfo);
+
     // Perform sync
     const eventsCount = await performInitialSync(calendar, account);
 
@@ -60,6 +81,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       message: "Sync completed successfully",
       eventsProcessed: eventsCount,
+      debugInfo: debugInfo
     });
   } catch (error) {
     console.error("Sync error:", error);

@@ -8,8 +8,11 @@ export function SyncButton({ calendarId }: { calendarId: string }) {
   const router = useRouter();
 
   const handleSync = async () => {
+    console.log(`[SyncButton] Starting sync for calendar: ${calendarId}`);
     setIsLoading(true);
+
     try {
+      console.log("[SyncButton] Sending sync request to API...");
       const response = await fetch("/api/sync", {
         method: "POST",
         headers: {
@@ -18,21 +21,36 @@ export function SyncButton({ calendarId }: { calendarId: string }) {
         body: JSON.stringify({ calendarId }),
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to sync");
-      }
+      console.log(`[SyncButton] Response status: ${response.status}`);
 
       const result = await response.json();
-      alert(`同期完了: ${result.eventsProcessed}件の予定を処理しました`);
+      console.log("[SyncButton] Response data:", result);
+
+      if (!response.ok) {
+        console.error("[SyncButton] Sync failed:", result);
+        throw new Error(result.details || result.error || "Failed to sync");
+      }
+
+      // Show detailed result
+      if (result.debugInfo) {
+        console.log("[SyncButton] Debug info:", result.debugInfo);
+      }
+
+      alert(
+        `同期完了!\n` +
+        `処理したイベント: ${result.eventsProcessed}件\n` +
+        `${result.message || ''}`
+      );
+
       router.refresh();
     } catch (error) {
-      console.error("Error syncing:", error);
+      console.error("[SyncButton] Error during sync:", error);
       alert(
-        error instanceof Error ? error.message : "同期に失敗しました"
+        `同期に失敗しました:\n${error instanceof Error ? error.message : '不明なエラー'}`
       );
     } finally {
       setIsLoading(false);
+      console.log("[SyncButton] Sync process completed");
     }
   };
 
