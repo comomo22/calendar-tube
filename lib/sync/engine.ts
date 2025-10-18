@@ -16,28 +16,55 @@ export async function syncEvent(
   event: any,
   eventType: "created" | "updated" | "deleted"
 ) {
+  console.log(`[SyncEngine] Starting sync for event ${event.id || eventType}`);
+  console.log(`[SyncEngine] Source calendar: ${sourceCalendar.calendar_name} (${sourceCalendar.id})`);
+  console.log(`[SyncEngine] Event type: ${eventType}`);
+  console.log(`[SyncEngine] Event summary: ${event.summary || '(no title)'}`);
+
   // Check if this event is a synced copy (has our marker)
   const isSyncedCopy =
     event.extendedProperties?.private?.[SYNC_MARKER] === "true";
 
   if (isSyncedCopy) {
     // This is a synced copy, don't sync it again to prevent loops
-    console.log(`Skipping synced copy: ${event.id}`);
+    console.log(`[SyncEngine] Skipping synced copy: ${event.id} (has calendar-tube-synced marker)`);
     return;
   }
 
+  console.log(`[SyncEngine] Event is original, proceeding with sync`);
+
   // Get all calendars for this user except the source
-  const { data: userCalendars } = await supabaseAdmin
+  console.log(`[SyncEngine] Finding target calendars for user ${sourceAccount.user_id}`);
+  const { data: userCalendars, error: fetchError } = await supabaseAdmin
     .from("calendars")
     .select("*, google_accounts!inner(*)")
     .eq("google_accounts.user_id", sourceAccount.user_id)
     .eq("is_active", true)
     .neq("id", sourceCalendar.id);
 
-  if (!userCalendars || userCalendars.length === 0) {
-    console.log("No target calendars to sync to");
+  if (fetchError) {
+    console.error(`[SyncEngine] Error fetching target calendars:`, fetchError);
     return;
   }
+
+  if (!userCalendars || userCalendars.length === 0) {
+    console.log("[SyncEngine] No target calendars found to sync to");
+    console.log(`[SyncEngine] Total calendars for user: checking...`);
+
+    // Debug: Check all calendars for this user
+    const { data: allCalendars } = await supabaseAdmin
+      .from("calendars")
+      .select("*, google_accounts!inner(*)")
+      .eq("google_accounts.user_id", sourceAccount.user_id);
+
+    console.log(`[SyncEngine] Total calendars found: ${allCalendars?.length || 0}`);
+    allCalendars?.forEach(cal => {
+      console.log(`[SyncEngine]   - ${cal.calendar_name} (active: ${cal.is_active}, id: ${cal.id})`);
+    });
+    return;
+  }
+
+  console.log(`[SyncEngine] Found ${userCalendars.length} target calendar(s) to sync to`)
 
   for (const targetCalendar of userCalendars) {
     try {
@@ -241,14 +268,22 @@ export async function performInitialSync(
   calendar: Calendar,
   account: GoogleAccount
 ) {
+  console.log(`[PerformInitialSync] Starting initial sync for calendar: ${calendar.calendar_name}`);
+  console.log(`[PerformInitialSync] Calendar ID: ${calendar.id}`);
+  console.log(`[PerformInitialSync] Google Account: ${account.email}`);
+
   const now = new Date();
   const threeMonthsLater = new Date();
   threeMonthsLater.setMonth(threeMonthsLater.getMonth() + 3);
+
+  console.log(`[PerformInitialSync] Fetching events from ${now.toISOString()} to ${threeMonthsLater.toISOString()}`);
 
   const { events, nextSyncToken } = await listEventsSafe(account, calendar.calendar_id, {
     timeMin: now.toISOString(),
     timeMax: threeMonthsLater.toISOString(),
   });
+
+  console.log(`[PerformInitialSync] Found ${events.length} events to sync`);
 
   // Update sync token
   await supabaseAdmin
@@ -259,12 +294,20 @@ export async function performInitialSync(
     })
     .eq("id", calendar.id);
 
+  console.log(`[PerformInitialSync] Updated sync token and last_sync_at`);
+
   // Sync each event
+  let syncedCount = 0;
   for (const event of events) {
     if (event.status !== "cancelled") {
+      console.log(`[PerformInitialSync] Processing event ${syncedCount + 1}/${events.length}: ${event.summary || '(no title)'}`);
       await syncEvent(calendar, account, event, "created");
+      syncedCount++;
+    } else {
+      console.log(`[PerformInitialSync] Skipping cancelled event: ${event.id}`);
     }
   }
 
+  console.log(`[PerformInitialSync] Sync complete. Processed ${syncedCount} events`);
   return events.length;
 }
